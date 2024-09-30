@@ -1,17 +1,7 @@
 import pygame
 import chess
-
-
-def is_middle_game(board: chess.Board) -> bool:
-    # Count the major and minor pieces remaining
-    piece_count = 0
-    for piece_type in [chess.ROOK, chess.QUEEN, chess.BISHOP, chess.KNIGHT]:
-        piece_count += len(board.pieces(piece_type, chess.WHITE)) + len(
-            board.pieces(piece_type, chess.BLACK)
-        )
-
-    # Middle game is roughly when both sides have 5 or more major and minor pieces
-    return piece_count > 10
+import time
+import asyncio
 
 
 piece_values = {
@@ -22,505 +12,6 @@ piece_values = {
     chess.QUEEN: 9,
     chess.KING: 0,
 }
-
-king_table_midgame = [
-    -3.0,
-    -4.0,
-    -4.0,
-    -5.0,
-    -5.0,
-    -4.0,
-    -4.0,
-    -3.0,
-    -3.0,
-    -4.0,
-    -4.0,
-    -5.0,
-    -5.0,
-    -4.0,
-    -4.0,
-    -3.0,
-    -3.0,
-    -4.0,
-    -4.0,
-    -5.0,
-    -5.0,
-    -4.0,
-    -4.0,
-    -3.0,
-    -3.0,
-    -4.0,
-    -4.0,
-    -5.0,
-    -5.0,
-    -4.0,
-    -4.0,
-    -3.0,
-    -2.0,
-    -3.0,
-    -3.0,
-    -4.0,
-    -4.0,
-    -3.0,
-    -3.0,
-    -2.0,
-    -1.0,
-    -2.0,
-    -2.0,
-    -2.0,
-    -2.0,
-    -2.0,
-    -2.0,
-    -1.0,
-    2.0,
-    2.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    2.0,
-    2.0,
-    2.0,
-    3.0,
-    1.0,
-    0.0,
-    0.0,
-    1.0,
-    3.0,
-    2.0,
-]
-
-king_table_endgame = [
-    -5.0,
-    -4.0,
-    -3.0,
-    -2.0,
-    -2.0,
-    -3.0,
-    -4.0,
-    -5.0,
-    -3.0,
-    -2.0,
-    -1.0,
-    0.0,
-    0.0,
-    -1.0,
-    -2.0,
-    -3.0,
-    -3.0,
-    -1.0,
-    2.0,
-    3.0,
-    3.0,
-    2.0,
-    -1.0,
-    -3.0,
-    -3.0,
-    -1.0,
-    3.0,
-    4.0,
-    4.0,
-    3.0,
-    -1.0,
-    -3.0,
-    -3.0,
-    -1.0,
-    3.0,
-    4.0,
-    4.0,
-    3.0,
-    -1.0,
-    -3.0,
-    -3.0,
-    -1.0,
-    2.0,
-    3.0,
-    3.0,
-    2.0,
-    -1.0,
-    -3.0,
-    -3.0,
-    -3.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    -3.0,
-    -3.0,
-    -5.0,
-    -3.0,
-    -3.0,
-    -3.0,
-    -3.0,
-    -3.0,
-    -3.0,
-    -5.0,
-]
-
-
-def get_position_table(board: chess.Board) -> dict[list[float]]:
-    position_tables = {
-        chess.PAWN: [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            5.0,
-            1.0,
-            1.0,
-            2.0,
-            3.0,
-            3.0,
-            2.0,
-            1.0,
-            1.0,
-            0.5,
-            0.5,
-            1.0,
-            2.5,
-            2.5,
-            1.0,
-            0.5,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            2.0,
-            2.0,
-            0.0,
-            0.0,
-            0.0,
-            0.5,
-            -0.5,
-            -1.0,
-            0.0,
-            0.0,
-            -1.0,
-            -0.5,
-            0.5,
-            0.5,
-            1.0,
-            1.0,
-            -2.0,
-            -2.0,
-            1.0,
-            1.0,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        chess.KNIGHT: [
-            -5.0,
-            -4.0,
-            -3.0,
-            -3.0,
-            -3.0,
-            -3.0,
-            -4.0,
-            -5.0,
-            -4.0,
-            -2.0,
-            0.0,
-            0.5,
-            0.5,
-            0.0,
-            -2.0,
-            -4.0,
-            -3.0,
-            0.5,
-            1.0,
-            1.5,
-            1.5,
-            1.0,
-            0.5,
-            -3.0,
-            -3.0,
-            0.0,
-            1.5,
-            2.0,
-            2.0,
-            1.5,
-            0.0,
-            -3.0,
-            -3.0,
-            0.5,
-            1.5,
-            2.0,
-            2.0,
-            1.5,
-            0.5,
-            -3.0,
-            -3.0,
-            0.0,
-            1.0,
-            1.5,
-            1.5,
-            1.0,
-            0.0,
-            -3.0,
-            -4.0,
-            -2.0,
-            0.0,
-            0.5,
-            0.5,
-            0.0,
-            -2.0,
-            -4.0,
-            -5.0,
-            -4.0,
-            -3.0,
-            -3.0,
-            -3.0,
-            -3.0,
-            -4.0,
-            -5.0,
-        ],
-        chess.BISHOP: [
-            -2.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -2.0,
-            -1.0,
-            0.0,
-            0.0,
-            0.5,
-            0.5,
-            0.0,
-            0.0,
-            -1.0,
-            -1.0,
-            0.0,
-            0.5,
-            1.0,
-            1.0,
-            0.5,
-            0.0,
-            -1.0,
-            -1.0,
-            0.5,
-            0.5,
-            1.0,
-            1.0,
-            0.5,
-            0.5,
-            -1.0,
-            -1.0,
-            0.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            0.0,
-            -1.0,
-            -1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            -1.0,
-            -1.0,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.5,
-            -1.0,
-            -2.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
-            -2.0,
-        ],
-        chess.ROOK: [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.5,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            0.5,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.5,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-        ],
-        chess.QUEEN: [
-            -2.0,
-            -1.0,
-            -1.0,
-            -0.5,
-            -0.5,
-            -1.0,
-            -1.0,
-            -2.0,
-            -1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -1.0,
-            -1.0,
-            0.0,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            -1.0,
-            -0.5,
-            0.0,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            -0.5,
-            0.0,
-            0.0,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            -0.5,
-            -1.0,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            -1.0,
-            -1.0,
-            0.0,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -1.0,
-            -2.0,
-            -1.0,
-            -1.0,
-            -0.5,
-            -0.5,
-            -1.0,
-            -1.0,
-            -2.0,
-        ],
-        chess.KING: king_table_midgame if is_middle_game(board) else king_table_endgame,
-    }
-    return position_tables
-
-
-def evaluate_board(board: chess.Board, color: chess.Color) -> float:
-    piece_score = 0
-    positional_score = 0
-
-    # Piece and positional scoring
-    for square in chess.SQUARES:
-        piece = board.piece_at(square)
-        if piece is not None:
-            piece_value = piece_values[piece.piece_type]
-            piece_score += piece_value if piece.color == color else -piece_value
-
-            # Positional advantage (e.g., center control)
-            if piece.color == color:
-                positional_score += get_position_table(board)[piece.piece_type][square]
-
-    # Bonus for king safety (encourage checks and checkmates)
-    check_bonus = 0
-    if board.is_check():
-        check_bonus = 10  # Increase the weight of checks slightly
-
-    # Combine scores
-    combined_score = piece_score + positional_score + check_bonus
-
-    # Return score based on the current turn
-    return combined_score if board.turn == color else -combined_score
-
 
 # Constants for display
 WIDTH, HEIGHT = 512, 512
@@ -534,6 +25,9 @@ DOT_COLOR_CAPTURE = (255, 0, 0)
 DOT_COLOR_SELECT = (0, 0, 255)
 SIDEBAR_BG = (50, 50, 50)
 TEXT_COLOR = (255, 255, 255)
+
+# Time controls (5 minutes per player)
+TIME_CONTROL = "2+5"  # 30 minutes per player
 
 # Initialize pygame
 pygame.init()
@@ -559,6 +53,12 @@ PIECES = {
 # Resize pieces to fit the board
 for piece in PIECES:
     PIECES[piece] = pygame.transform.scale(PIECES[piece], (SQUARE_SIZE, SQUARE_SIZE))
+
+
+def parse_time(time_str):
+    """Parse a time control string into minutes to start and seconds to add per move."""
+    minutes, seconds = time_str.split("+")
+    return int(minutes), int(seconds)
 
 
 def draw_text_wrapped(surface, text, font, color, rect):
@@ -591,21 +91,44 @@ class ChessEngine:
         self.name = name
         self.author = author
 
-    def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
+    async def move(
+        self,
+        board: chess.Board,
+        color: chess.Color,
+        time_remaining: int,
+        time_increment: int,
+    ) -> chess.Move:
         """Get a move from the engine."""
         pass
 
 
 class ChessGame:
-    def __init__(self, white: ChessEngine = None, black: ChessEngine = None):
+    def __init__(
+        self, use_gui: bool = True, white: ChessEngine = None, black: ChessEngine = None
+    ):
+        self.use_gui = use_gui
+
         self.board = chess.Board()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, HEIGHT))
-        pygame.display.set_caption(f"Chessaholic Game: {white.name if white else 'Human'} vs. {black.name if black else 'Human'}")
-        self.selected_square = None
+
+        if use_gui:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, HEIGHT))
+            pygame.display.set_caption(
+                f"Chessaholic Game: {white.name if white else 'Human'} vs. {black.name if black else 'Human'}"
+            )
+            self.selected_square = None
+            self.clock = pygame.time.Clock()
+
         self.legal_moves = []
         self.white = white
         self.black = black
         self.game_over = False
+
+        # Initialize clocks
+        self.white_time = parse_time(TIME_CONTROL)[0] * 60
+        self.black_time = self.white_time
+        self.time_bonus = parse_time(TIME_CONTROL)[1]
+        self.last_move_time = time.time()  # Store the last time a move was made
+        self.current_turn_time = None
 
     def draw_board(self):
         """Draws the chessboard."""
@@ -644,6 +167,23 @@ class ChessGame:
                         ),
                     )
                     col_idx += 1
+
+    def update_time(self):
+        """Update the time for the current player."""
+        now = time.time()
+        if self.board.turn == chess.WHITE:
+            self.white_time -= now - self.last_move_time
+        else:
+            self.black_time -= now - self.last_move_time
+        self.last_move_time = now
+
+        # Check for time out
+        if self.white_time <= 0:
+            self.game_over = True
+            self.show_result("Black wins on time!")
+        elif self.black_time <= 0:
+            self.game_over = True
+            self.show_result("White wins on time!")
 
     def draw_sidebar(self):
         """Draws the sidebar with player information and game status."""
@@ -691,38 +231,55 @@ class ChessGame:
             f"Move: {move_count}",
             font,
             TEXT_COLOR,
-            pygame.Rect(WIDTH + 10, 280, SIDEBAR_WIDTH - 20, HEIGHT // 8),
+            pygame.Rect(WIDTH + 10, 230, SIDEBAR_WIDTH - 20, HEIGHT // 8),
         )
 
         # Game status
         if self.board.is_checkmate():
             winner = "Black" if self.board.turn == chess.WHITE else "White"
-            status_text = f"Winner: {winner}"
-            self.game_over = True
+            self.game_over = f"Winner: {winner}"
         elif self.board.is_stalemate():
-            status_text = "Stalemate"
-            self.game_over = True
+            self.game_over = "Stalemate"
         elif self.board.is_insufficient_material():
-            status_text = "Draw: Insufficient Material"
-            self.game_over = True
+            self.game_over = "Draw: Insufficient Material"
         elif self.board.is_fivefold_repetition():
-            status_text = "Draw: 5-fold Repetition"
-            self.game_over = True
+            self.game_over = "Draw: 5-fold Repetition"
         elif self.board.is_seventyfive_moves():
-            status_text = "Draw: 75-move Rule"
-            self.game_over = True
+            self.game_over = "Draw: 75-move Rule"
         else:
-            status_text = ""
+            self.game_over = ""
 
-        if status_text:
+        if self.game_over:
             draw_text_wrapped(
                 self.screen,
-                status_text,
+                self.game_over,
                 font,
                 TEXT_COLOR,
-                pygame.Rect(WIDTH + 10, 370, SIDEBAR_WIDTH - 20, HEIGHT // 8),
+                pygame.Rect(WIDTH + 10, 320, SIDEBAR_WIDTH - 20, HEIGHT // 8),
             )
-            
+
+        # Draw clocks
+        white_time_text = (
+            f"White Time: {int(self.white_time // 60)}:{int(self.white_time % 60):02d}"
+        )
+        black_time_text = (
+            f"Black Time: {int(self.black_time // 60)}:{int(self.black_time % 60):02d}"
+        )
+        draw_text_wrapped(
+            self.screen,
+            white_time_text,
+            font,
+            TEXT_COLOR,
+            pygame.Rect(WIDTH + 10, 410, SIDEBAR_WIDTH - 20, HEIGHT // 8),
+        )
+        draw_text_wrapped(
+            self.screen,
+            black_time_text,
+            font,
+            TEXT_COLOR,
+            pygame.Rect(WIDTH + 10, 460, SIDEBAR_WIDTH - 20, HEIGHT // 8),
+        )
+
     def draw_avalable_moves(self, square: chess.Square):
         """Draws the available moves on the board for the selected piece."""
         pygame.draw.circle(
@@ -734,7 +291,7 @@ class ChessGame:
             ),
             10,
         )
-        
+
         for move in self.legal_moves:
             if move.from_square == square:
                 pygame.draw.circle(
@@ -751,6 +308,12 @@ class ChessGame:
         """Handles mouse click events."""
         if pos[0] > WIDTH:  # Ignore clicks on the sidebar
             return
+
+        if self.game_over:
+            return
+
+        self.update_time()  # Update time before handling move
+
         col, row = pos[0] // SQUARE_SIZE, pos[1] // SQUARE_SIZE
         square = chess.square(col, 7 - row)
 
@@ -764,6 +327,11 @@ class ChessGame:
                     if move.from_square == square
                 ]
         else:
+            if self.board.turn == chess.WHITE:
+                self.white_time += self.time_bonus
+            else:
+                self.black_time += self.time_bonus
+
             # Try to move the piece to the clicked square
             move = chess.Move(self.selected_square, square)
 
@@ -785,57 +353,79 @@ class ChessGame:
                 self.legal_moves = []
 
     def get_promotion_choice(self) -> int:
-        """Display a UI for choosing a promotion piece."""
+        """Display a GUI for choosing a promotion piece."""
         promotion_pieces = [chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT]
         promotion_names = ["Queen", "Rook", "Bishop", "Knight"]
 
-        # Simple console input for promotion choice (you can make a Pygame UI)
-        print("Choose a promotion piece:")
-        for i, name in enumerate(promotion_names):
-            print(f"{i + 1}: {name}")
+        # Display promotion options
+        promotion_popup = True
+        while promotion_popup:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = pygame.mouse.get_pos()
+                    if WIDTH // 2 - 50 < x < WIDTH // 2 + 50:
+                        for i, piece in enumerate(promotion_pieces):
+                            if HEIGHT // 2 + i * 60 < y < HEIGHT // 2 + (i + 1) * 60:
+                                promotion_popup = False
+                                return piece
 
-        choice = 0
-        while choice not in range(1, 5):
-            choice = int(input("Enter 1-4: "))
+            self.screen.fill(WHITE)
+            for i, name in enumerate(promotion_names):
+                text = font.render(name, True, BLACK)
+                self.screen.blit(
+                    text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2 + i * 60)
+                )
 
-        return promotion_pieces[choice - 1]
+            pygame.display.flip()
 
-    def play_game(self):
-        """Main loop for the game."""
+    async def play_game(self):
+        if self.white is None or self.black is None:
+            raise ValueError(
+                "Both white and black engines must be provided to play the game."
+            )
+
         running = True
-        clock = pygame.time.Clock()
-
         while running and not self.game_over:
+            # Handle engine move if necessary
             current_player = (
                 self.white if self.board.turn == chess.WHITE else self.black
             )
-
-            if not current_player:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        self.handle_click(pygame.mouse.get_pos())
-            else:
-                move = current_player.move(board=self.board, color=self.board.turn)
+            self.update_time()
+            
+            move = await current_player.move(self.board, self.board.turn)
+            if move and move in self.board.legal_moves:
                 self.board.push(move)
+                self.last_move_time = time.time()  # Reset last move time
+                if self.board.turn == chess.WHITE:
+                    self.white_time += self.time_bonus  # Increment time after each move
+                else:
+                    self.black_time += self.time_bonus
 
-            # Draw board, pieces, and sidebar
-            self.draw_board()
-            self.draw_pieces()
-            if self.selected_square: self.draw_avalable_moves(self.selected_square)
-            self.draw_sidebar()
+            # Update and draw game state
+            self.update_time()
+            if self.use_gui:
+                self.draw_board()
+                self.draw_pieces()
+                self.draw_sidebar()
+                pygame.display.flip()
 
-            # Update the display
-            pygame.display.update()
-
-            clock.tick(60)
+                self.clock.tick(60)  # Maintain FPS to avoid excessive CPU usage
 
         if self.game_over:
-            print(self.board.result())
+            self.show_result(
+                f"{self.game_over} in {self.board.fullmove_number} moves: {self.board.result()}"
+            )
 
+        if self.use_gui:
             while True:
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         quit()
+
+    def show_result(self, result_text: str):
+        """Display the result and end the game."""
+        print(result_text)

@@ -1,8 +1,9 @@
-from chessaholic import ChessEngine, piece_values, get_position_table
+from chessaholic import ChessEngine
 import chess
+from engine_utils import *
 
 
-class AquaV3(ChessEngine):
+class Aqua3(ChessEngine):
     def __init__(self) -> None:
         super().__init__("Aqua V3", "proplayer919")
 
@@ -117,7 +118,7 @@ class AquaV3(ChessEngine):
             reverse=True,
         )
 
-    def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
-        return self.search(board, color, 4)[
+    async def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
+        return self.search(board, color, 2)[
             0
         ]  # Increase depth to 4 for better evaluation

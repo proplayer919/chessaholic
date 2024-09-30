@@ -12,7 +12,7 @@ piece_values = {
 }
 
 
-class AquaV2(ChessEngine):
+class Aqua2(ChessEngine):
     def __init__(self) -> None:
         super().__init__("Aqua V2", "proplayer919")
 
@@ -79,5 +79,5 @@ class AquaV2(ChessEngine):
 
         return best_move, best_evaluation
 
-    def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
-        return self.search(board, color, 2)[0]
+    async def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
+        return self.search(board, color, 1)[0]

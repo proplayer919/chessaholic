@@ -1,7 +1,15 @@
 from chessaholic import ChessGame
-from AquaV1 import AquaV1
-from AquaV2 import AquaV2
-from AquaV3 import AquaV3
+from Aqua1 import Aqua1
+from Aqua2 import Aqua2
+from Aqua3 import Aqua3
+from Aqua4 import Aqua4
+from randombot import RandomBot
+import asyncio
 
-game = ChessGame(white=None, black=AquaV1())
-game.play_game()
+
+async def main():
+    game = ChessGame(use_gui=True, white=Aqua2(), black=Aqua4())
+    await game.play_game()
+
+
+asyncio.run(main())

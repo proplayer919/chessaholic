@@ -11,7 +11,7 @@ piece_values = {
     chess.KING: 0
 }
 
-class AquaV1(ChessEngine):
+class Aqua1(ChessEngine):
     def __init__(self) -> None:
         super().__init__("Aqua V1", "proplayer919")
 
@@ -42,7 +42,7 @@ class AquaV1(ChessEngine):
 
         return float('inf') if board.is_checkmate() else combined_score
 
-    def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
+    async def move(self, board: chess.Board, color: chess.Color) -> chess.Move:
         moves = list(board.generate_legal_moves())
 
         best_move = None
